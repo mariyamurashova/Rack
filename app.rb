@@ -1,7 +1,7 @@
 class App
 
   def call(env)
-    return [status, headers, body]
+    #return [status, headers, body]
   end
 
 private
