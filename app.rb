@@ -6,8 +6,7 @@ QUERY_WORDS = ["year", "month", "day", "hour", "minute", "second"]
 
   def call(env)
     if request_path_present?(env) && request_query_present?(env)
-      status = response_status(env)
-      body = response_body(env) 
+      status, body = response_status_body(env)
     else
       status= 404
       body = ["Page not found"]
@@ -17,23 +16,17 @@ QUERY_WORDS = ["year", "month", "day", "hour", "minute", "second"]
 
 private
 
-  def response_status(env)
-    check_query_correctness(env)
-      if @errors.count == 0
-        return status = 200
-      else
-        return status = 400
-      end
-  end
-
-  def response_body(env)
-    if @errors.count != 0
-      body = ["Unknown time format #{@errors}"]
-    else 
+  def response_status_body(env)
+    if request_query_correct?(env)
+      status = 200
       @time_formatter = TimeFormatter.new
       body = @time_formatter.call(@query)
+    else
+      status = 400
+      body = ["Unknown time format #{@errors}"]
     end
-    return body
+    
+    return status, body
   end
 
   def headers
@@ -53,12 +46,13 @@ private
     @query = query["format"].split(",")
   end
 
-  def check_query_correctness(env)
+  def request_query_correct?(env)
     @errors = [ ]
     get_query_from_request(env)
     @query.each do |query_word|
-    @errors << query_word if !QUERY_WORDS.include?(query_word) 
+      @errors << query_word if !QUERY_WORDS.include?(query_word) 
+    end
+    return true if @errors.count == 0
   end
-end
   
 end
