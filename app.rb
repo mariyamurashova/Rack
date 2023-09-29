@@ -20,7 +20,7 @@ private
     if request_query_correct?(env)
       status = 200
       @time_formatter = TimeFormatter.new
-      body = @time_formatter.call(@query)
+      body = @time_formatter.call(@request_query)
     else
       status = 400
       body = ["Unknown time format #{@errors}"]
@@ -42,17 +42,21 @@ private
   end
 
   def get_query_from_request(env)
-    query = Rack::Utils.parse_query URI(env["REQUEST_URI"]).query
-    @query = query["format"].split(",")
+    @request_query = Rack::Utils.parse_nested_query(env["QUERY_STRING"]).values
+    @request_query=@query[0].split(",")
   end
 
   def request_query_correct?(env)
     @errors = [ ]
     get_query_from_request(env)
-    @query.each do |query_word|
-      @errors << query_word if !QUERY_WORDS.include?(query_word) 
+    if @request_query.empty? 
+      return false
+    else
+      @request_query.each do |query_word|
+        @errors << query_word if !QUERY_WORDS.include?(query_word) 
     end
     return true if @errors.count == 0
   end
+ end
   
 end
