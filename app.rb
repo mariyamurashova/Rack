@@ -5,9 +5,9 @@ class App
 QUERY_WORDS = ["year", "month", "day", "hour", "minute", "second"]
 
   def call(env)
-    if request_path_present?(env) && query_present?(env)
-      status = status(env)
-      body = body(env) 
+    if request_path_present?(env) && request_query_present?(env)
+      status = response_status(env)
+      body = response_body(env) 
     else
       status= 404
       body = ["Page not found"]
@@ -17,7 +17,7 @@ QUERY_WORDS = ["year", "month", "day", "hour", "minute", "second"]
 
 private
 
-  def status(env)
+  def response_status(env)
     check_query_correctness(env)
       if @errors.count == 0
         return status = 200
@@ -26,7 +26,7 @@ private
       end
   end
 
-  def body(env)
+  def response_body(env)
     if @errors.count != 0
       body = ["Unknown time format #{@errors}"]
     else 
@@ -44,7 +44,7 @@ private
     env["REQUEST_PATH"] == "/time" 
   end
 
-  def query_present?(env)
+  def request_query_present?(env)
     env["QUERY_STRING"] != "" 
   end
 
