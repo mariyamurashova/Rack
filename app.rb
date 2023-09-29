@@ -1,12 +1,15 @@
+require_relative 'time_formatter'
+
 class App
 
+QUERY_WORDS = ["year", "month", "day", "hour", "minute", "second"]
+
   def call(env)
-    if request_path_and_query_present?(env)
-      body = create_body_response(get_query(env))
-      status = 200
-      status = 400 if @errors.count != 0
+    if request_path_present?(env) && query_present?(env)
+      status = status(env)
+      body = body(env) 
     else
-      status=404
+      status= 404
       body = ["Page not found"]
     end
      return status, headers, body
@@ -14,42 +17,48 @@ class App
 
 private
 
- def headers
-  {'Content-Type' => 'text/plain'}
- end
-
-def request_path_and_query_present?(env)
-  env["REQUEST_PATH"] == "/time" && env["QUERY_STRING"] != ""
-end
-
-def get_query(env)
-  query = Rack::Utils.parse_query URI(env["REQUEST_URI"]).query
-  return query = (query["format"]).split(",")
-end
-
-def create_body_response(query)
-  @errors = [ ]
-  body = ""
-  query.each do |w|
-    case w 
-      when "second"
-        body = body+ "#{Time.now.sec}"+ " "
-      when "minute"
-        body = body+ "#{Time.now.min}"+ " "
-      when "hour"
-        body = body+ "#{Time.now.hour}"+ " "
-      when "day"
-        body = body+ "#{Time.now.day}"+ " "
-      when "month"
-        body = body+ "#{Time.now.month}" + " "
-      when "year"
-        body = body + "#{Time.now.year}" + " "
-    else
-      @errors << w
-      body = "Unknown time format #{@errors}"
-    end
+  def status(env)
+    check_query_correctness(env)
+      if @errors.count == 0
+        return status = 200
+      else
+        return status = 400
+      end
   end
-return [body]
-end
 
+  def body(env)
+    if @errors.count != 0
+      body = ["Unknown time format #{@errors}"]
+    else 
+      @time_formatter = TimeFormatter.new
+      body = @time_formatter.call(@query)
+    end
+    return body
+  end
+
+  def headers
+    {'Content-Type' => 'text/plain'}
+  end
+
+  def request_path_present?(env)
+    env["REQUEST_PATH"] == "/time" 
+  end
+
+  def query_present?(env)
+    env["QUERY_STRING"] != "" 
+  end
+
+  def get_query_from_request(env)
+    query = Rack::Utils.parse_query URI(env["REQUEST_URI"]).query
+    @query = query["format"].split(",")
+  end
+
+  def check_query_correctness(env)
+    @errors = [ ]
+    get_query_from_request(env)
+    @query.each do |query_word|
+    @errors << query_word if !QUERY_WORDS.include?(query_word) 
+  end
+end
+  
 end
