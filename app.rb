@@ -2,61 +2,29 @@ require_relative 'time_formatter'
 
 class App
 
-QUERY_WORDS = ["year", "month", "day", "hour", "minute", "second"]
-
   def call(env)
-    if request_path_present?(env) && request_query_present?(env)
-      status, body = response_status_body(env)
+    request = Rack::Request.new(env) 
+    if request_correct?(request)
+      time_formatter = TimeFormatter.new
+        if time_formatter.query_valid?(request.query_string)
+          create_response(200, time_formatter.format_date)
+        else 
+         create_response(400, ["Unknown time format: #{time_formatter.invalid_words.join(" ")}"])
+        end
     else
-      status= 404
-      body = ["Page not found"]
-    end
-     return status, headers, body
+      create_response(404, ["Page not found"])
+    end     
   end
 
 private
 
-  def response_status_body(env)
-    if request_query_correct?(env)
-      status = 200
-      @time_formatter = TimeFormatter.new
-      body = @time_formatter.call(@request_query)
-    else
-      status = 400
-      body = ["Unknown time format #{@errors}"]
-    end
-    
-    return status, body
+  def request_correct?(request)
+    request.path =="/time" && request.request_method == "GET"
   end
 
-  def headers
-    {'Content-Type' => 'text/plain'}
+  def create_response(status, body)
+    response = Rack::Response.new(body, status, {'Content-Type' => 'text/plain'})
+    response.finish
   end
-
-  def request_path_present?(env)
-    env["REQUEST_PATH"] == "/time" 
-  end
-
-  def request_query_present?(env)
-    env["QUERY_STRING"] != "" 
-  end
-
-  def get_query_from_request(env)
-    @request_query = Rack::Utils.parse_nested_query(env["QUERY_STRING"]).values
-    @request_query=@query[0].split(",")
-  end
-
-  def request_query_correct?(env)
-    @errors = [ ]
-    get_query_from_request(env)
-    if @request_query.empty? 
-      return false
-    else
-      @request_query.each do |query_word|
-        @errors << query_word if !QUERY_WORDS.include?(query_word) 
-    end
-    return true if @errors.count == 0
-  end
- end
   
 end
