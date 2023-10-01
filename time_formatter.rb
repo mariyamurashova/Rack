@@ -1,26 +1,32 @@
 class TimeFormatter
 
   VALID_WORDS = ["year", "month", "day", "hour", "minute", "second"]
+  DATE_FORMATTER = {"year" => "%Y", "month" =>"%b", "day" =>"%d", "hour" => "%H", "minute" => "%M", "second" => "%S" }
 
-  attr_accessor :invalid_words, :valid_words
+  attr_accessor :invalid_words, :valid_words, :query
 
-  def initialize
+  def initialize(query)
     @invalid_words = [ ]
     @valid_words = [ ]
+    @query = Rack::Utils.parse_nested_query(query).values
+  end
+
+  def converted_request_query
+    @query = @query[0].split(",")
+    get_valid_and_invalid_words
+    return @query
   end
 
   def query_valid?(query)
-    query = get_query_from_request(query)
-    if query.empty? 
+    if converted_request_query.empty? 
       return false
     else
-      get_valid_and_invalid_words(query)
       return true if @invalid_words.empty?
     end
   end
 
-  def get_valid_and_invalid_words(query)
-    query.each do |query_word|
+  def get_valid_and_invalid_words
+    @query.each do |query_word|
       if VALID_WORDS.include?(query_word)
         @valid_words << query_word
       else  
@@ -29,33 +35,14 @@ class TimeFormatter
     end
   end
 
-  def get_query_from_request(query)
-    request_query = Rack::Utils.parse_nested_query(query).values
-    request_query=request_query[0].split(",")
-  end
-
   def format_date
     Time.now.strftime(string_for_date_conversion.join(" "))
   end
 
   def string_for_date_conversion
-    string_for_date_conversion = [ ]
-    @valid_words.each do |word|
-      case word
-      when "year"
-        string_for_date_conversion << "%Y"
-      when "month"
-        string_for_date_conversion << "%b"
-      when "day"
-        string_for_date_conversion << "%d"
-      when "hour" 
-       string_for_date_conversion << "%H"
-      when "minute"
-        string_for_date_conversion << "%M"
-      when "second"
-         string_for_date_conversion << "%S"
-      end
+    @valid_words.map do |word|
+      word  = DATE_FORMATTER[word] 
     end
-    return string_for_date_conversion
   end
-  end
+  
+end
