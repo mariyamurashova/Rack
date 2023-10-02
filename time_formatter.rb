@@ -11,24 +11,23 @@ class TimeFormatter
     @query = Rack::Utils.parse_nested_query(query).values
   end
 
-  def converted_request_query
-    @query = @query[0].split(",")
+  def call
+    converted_request_query
     get_valid_and_invalid_words
-    return @query
   end
 
-  def query_valid?(query)
-    if converted_request_query.empty? 
-      return false
-    else
-      return true if @invalid_words.empty?
-    end
+  def converted_request_query
+    @query = @query[0].split(",")
+  end
+
+  def query_valid?
+    @invalid_words.empty? && !@valid_words.empty?
   end
 
   def get_valid_and_invalid_words
     @query.each do |query_word|
       if VALID_WORDS.include?(query_word)
-        @valid_words << query_word
+        @valid_words << DATE_FORMATTER[query_word]
       else  
         @invalid_words << query_word
       end 
@@ -36,7 +35,7 @@ class TimeFormatter
   end
 
   def format_date
-    Time.now.strftime(string_for_date_conversion.join(" "))
+    Time.now.strftime(@valid_words.join(" "))
   end
 
   def string_for_date_conversion
