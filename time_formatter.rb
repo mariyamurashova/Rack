@@ -37,11 +37,5 @@ class TimeFormatter
   def format_date
     Time.now.strftime(@valid_words.join(" "))
   end
-
-  def string_for_date_conversion
-    @valid_words.map do |word|
-      word  = DATE_FORMATTER[word] 
-    end
-  end
   
 end
