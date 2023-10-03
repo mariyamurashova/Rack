@@ -1,21 +1,35 @@
+require_relative 'time_formatter'
+
 class App
 
   def call(env)
-    #return [status, headers, body]
+    request = Rack::Request.new(env) 
+    if request_correct?(request)
+      create_response_to_valid_or_invalid_requests(request)
+    else
+      create_response(404, ["Page not found"])
+    end     
   end
 
 private
 
-  def status
-    status = 404
+  def request_correct?(request)
+    request.path =="/time" && request.request_method == "GET"
   end
 
-  def headers
-    {'Content-Type' => 'text/plain'}
+  def create_response(status, body)
+    response = Rack::Response.new(body, status, {'Content-Type' => 'text/plain'})
+    response.finish
   end
 
-  def body
-    ["Page not found"]
+  def create_response_to_valid_or_invalid_requests(request)
+    time_formatter = TimeFormatter.new(request.query_string)
+    time_formatter.call
+    if time_formatter.query_valid?
+      create_response(200, time_formatter.format_date)
+    else 
+      create_response(400, ["Unknown time format: #{time_formatter.invalid_words.join(" ")}"])
+    end
   end
-
+  
 end
